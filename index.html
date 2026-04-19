@@ -122,19 +122,32 @@
 
   .app-layout {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .sidebar {
+    width: min(320px, calc(100vw - 36px));
+    max-height: calc(100vh - 36px);
     padding: 16px;
     border-radius: 22px;
     background: linear-gradient(180deg, rgba(20, 37, 61, 0.08), rgba(255, 255, 255, 0.56));
     border: 1px solid rgba(20, 37, 61, 0.08);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    position: sticky;
+    position: fixed;
     top: 18px;
+    left: 18px;
+    z-index: 45;
+    overflow-y: auto;
+    transform: translateX(calc(-100% - 24px));
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.28s ease, opacity 0.28s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .sidebar-title {
@@ -155,6 +168,21 @@
 
   .main-panel {
     min-width: 0;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 24, 48, 0.34);
+    z-index: 35;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+
+  .sidebar-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .system-strip {
@@ -354,8 +382,35 @@
 
   .top-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 14px;
+  }
+
+  .sidebar-toggle {
+    width: 46px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(20, 37, 61, 0.08);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.84);
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(20, 37, 61, 0.08);
+  }
+
+  .sidebar-toggle-lines {
+    display: grid;
+    gap: 4px;
+  }
+
+  .sidebar-toggle-lines span {
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--text);
+    display: block;
   }
 
   .install-btn {
@@ -556,7 +611,6 @@
       grid-template-columns: 1fr;
     }
 
-    .app-layout,
     .hero-strip,
     .system-strip,
     .workflow-strip,
@@ -566,7 +620,9 @@
     }
 
     .sidebar {
-      position: static;
+      left: 16px;
+      top: 16px;
+      width: min(320px, calc(100vw - 32px));
     }
   }
 </style>
@@ -577,6 +633,13 @@
     <h1>Poly Bag Calculator</h1>
     <p class="subtitle">Switch between Shopping and Courier bag pricing in one calculator.</p>
     <div class="top-actions">
+      <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle quick tools" aria-expanded="false">
+        <span class="sidebar-toggle-lines">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
       <button type="button" class="install-btn" id="installBtn">Install App</button>
     </div>
     <div class="hero-strip">
@@ -710,16 +773,17 @@
 
     <p class="hint">Zero-value fields show as none while typing and return to 0 if left empty.</p>
     <div class="meta-bar">
-      <span id="appVersion">Version 2.3.0</span>
+      <span id="appVersion">Version 2.4.0</span>
       <span id="updateStatus">stable release</span>
     </div>
     <p class="credit-line">Developed by Tushar Mrong</p>
   </div>
 
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <div class="update-toast" id="updateToast" aria-live="polite"></div>
 
   <script>
-    const APP_VERSION = "2.3.0";
+    const APP_VERSION = "2.4.0";
     const config = {
       shopping: {
         title: "Shopping Bag Details",
@@ -750,6 +814,9 @@
     const handleRow = document.getElementById("handleRow");
     const resetBtn = document.getElementById("resetBtn");
     const installBtn = document.getElementById("installBtn");
+    const sidebarToggle = document.getElementById("sidebarToggle");
+    const sidebar = document.querySelector(".sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
     const appVersionLabel = document.getElementById("appVersion");
     const updateStatusLabel = document.getElementById("updateStatus");
     const updateToast = document.getElementById("updateToast");
@@ -771,6 +838,7 @@
     let updateToastTimer = null;
     let isReloadingForUpdate = false;
     let currentResultText = "";
+    let sidebarOpen = false;
 
     appVersionLabel.textContent = "Version " + APP_VERSION;
     systemVersion.textContent = APP_VERSION;
@@ -836,6 +904,13 @@
           updateToast.classList.remove("visible");
         }, 3200);
       }
+    }
+
+    function setSidebarOpen(open) {
+      sidebarOpen = open;
+      sidebar.classList.toggle("open", open);
+      sidebarOverlay.classList.toggle("visible", open);
+      sidebarToggle.setAttribute("aria-expanded", String(open));
     }
 
     function getStorageKey(name, mode = currentMode) {
@@ -1201,6 +1276,12 @@
     });
 
     resetBtn.addEventListener("click", resetFormValues);
+    sidebarToggle.addEventListener("click", () => {
+      setSidebarOpen(!sidebarOpen);
+    });
+    sidebarOverlay.addEventListener("click", () => {
+      setSidebarOpen(false);
+    });
 
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
@@ -1364,9 +1445,16 @@
     } else {
       setSystemSyncStatus("Browser only");
     }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    });
   </script>
 </body>
 </html>
+
 
 
 

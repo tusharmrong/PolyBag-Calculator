@@ -1,4 +1,4 @@
-﻿const APP_VERSION = "1.3.0";
+﻿const APP_VERSION = "2.0.0";
 const CACHE_NAME = `polybag-calculator-${APP_VERSION}`;
 const APP_ASSETS = [
   "./",
@@ -75,6 +75,7 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
 
 
 

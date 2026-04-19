@@ -127,6 +127,31 @@
     margin-bottom: 18px;
   }
 
+  .workflow-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .workflow-btn {
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(20, 37, 61, 0.08);
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .workflow-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(20, 37, 61, 0.08);
+  }
+
   .status-chip {
     padding: 10px 12px;
     border-radius: 16px;
@@ -363,6 +388,24 @@
     text-transform: uppercase;
   }
 
+  .result-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+  }
+
+  .copy-btn {
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(20, 37, 61, 0.08);
+    background: rgba(20, 37, 61, 0.06);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
   .result-line {
     display: flex;
     justify-content: space-between;
@@ -478,6 +521,7 @@
 
     .hero-strip,
     .system-strip,
+    .workflow-strip,
     .action-row {
       display: grid;
       grid-template-columns: 1fr;
@@ -511,6 +555,13 @@
         <span class="status-label">System Sync</span>
         <span class="status-value" id="systemSyncStatus">Preparing...</span>
       </div>
+    </div>
+
+    <div class="workflow-strip">
+      <button type="button" class="workflow-btn" id="shoppingPresetBtn">Use Shopping Preset</button>
+      <button type="button" class="workflow-btn" id="courierPresetBtn">Use Courier Preset</button>
+      <button type="button" class="workflow-btn" id="saveDefaultsBtn">Save Current Defaults</button>
+      <button type="button" class="workflow-btn" id="loadDefaultsBtn">Load Saved Defaults</button>
     </div>
 
     <div class="mode-switch" role="tablist" aria-label="Bag type">
@@ -601,11 +652,14 @@
     <div class="result" id="output" aria-live="polite">
       <div class="result-badge">Calculation Preview</div>
       <p class="result-empty">Enter the bag details, choose the type, and calculate the final price.</p>
+      <div class="result-actions">
+        <button type="button" class="copy-btn" id="copyResultBtn">Copy Result</button>
+      </div>
     </div>
 
     <p class="hint">Zero-value fields show as none while typing and return to 0 if left empty.</p>
     <div class="meta-bar">
-      <span id="appVersion">Version 2.1.0</span>
+      <span id="appVersion">Version 2.2.0</span>
       <span id="updateStatus">stable release</span>
     </div>
     <p class="credit-line">Developed by Tushar Mrong</p>
@@ -614,7 +668,7 @@
   <div class="update-toast" id="updateToast" aria-live="polite"></div>
 
   <script>
-    const APP_VERSION = "2.1.0";
+    const APP_VERSION = "2.2.0";
     const config = {
       shopping: {
         title: "Shopping Bag Details",
@@ -648,6 +702,11 @@
     const appVersionLabel = document.getElementById("appVersion");
     const updateStatusLabel = document.getElementById("updateStatus");
     const updateToast = document.getElementById("updateToast");
+    const shoppingPresetBtn = document.getElementById("shoppingPresetBtn");
+    const courierPresetBtn = document.getElementById("courierPresetBtn");
+    const saveDefaultsBtn = document.getElementById("saveDefaultsBtn");
+    const loadDefaultsBtn = document.getElementById("loadDefaultsBtn");
+    const copyResultBtn = document.getElementById("copyResultBtn");
     const connectionStatus = document.getElementById("connectionStatus");
     const systemVersion = document.getElementById("systemVersion");
     const systemSyncStatus = document.getElementById("systemSyncStatus");
@@ -660,9 +719,25 @@
     let adhesiveEditedManually = false;
     let updateToastTimer = null;
     let isReloadingForUpdate = false;
+    let currentResultText = "";
 
     appVersionLabel.textContent = "Version " + APP_VERSION;
     systemVersion.textContent = APP_VERSION;
+
+    function getFieldIds() {
+      return [
+        "width",
+        "length",
+        "extraMeasure",
+        "thickness",
+        "baseQty",
+        "blockCharge",
+        "printCost",
+        "adhesiveCost",
+        "profit",
+        "handleCost"
+      ];
+    }
 
     function formatMoney(value) {
       return "Tk " + value.toFixed(2);
@@ -709,6 +784,132 @@
         updateToastTimer = setTimeout(() => {
           updateToast.classList.remove("visible");
         }, 3200);
+      }
+    }
+
+    function getStorageKey(name, mode = currentMode) {
+      if (name === "last-used") {
+        return "polybag-last-used";
+      }
+
+      return `polybag-${name}-${mode}`;
+    }
+
+    function getCurrentFormSnapshot() {
+      return {
+        mode: currentMode,
+        width: document.getElementById("width").value,
+        length: document.getElementById("length").value,
+        extraMeasure: document.getElementById("extraMeasure").value,
+        thickness: document.getElementById("thickness").value,
+        baseQty: document.getElementById("baseQty").value,
+        blockCharge: document.getElementById("blockCharge").value,
+        printCost: document.getElementById("printCost").value,
+        adhesiveCost: document.getElementById("adhesiveCost").value,
+        profit: document.getElementById("profit").value,
+        handleCost: document.getElementById("handleCost").value,
+        handleEnabled
+      };
+    }
+
+    function applySnapshot(snapshot, mode = currentMode) {
+      if (!snapshot) {
+        return;
+      }
+
+      if (mode !== currentMode) {
+        setMode(mode);
+      }
+
+      getFieldIds().forEach((fieldId) => {
+        if (snapshot[fieldId] !== undefined && snapshot[fieldId] !== null) {
+          document.getElementById(fieldId).value = snapshot[fieldId];
+        }
+      });
+
+      handleEnabled = Boolean(snapshot.handleEnabled) && currentMode === "shopping";
+      handleToggle.classList.toggle("active", handleEnabled);
+      handleToggle.textContent = handleEnabled ? "Handle Cost Added" : "Add Handle Cost";
+      handleRow.classList.toggle("hidden", !handleEnabled);
+
+      if (currentMode === "courier") {
+        updateAdhesiveFromWidth(true);
+      }
+    }
+
+    function saveLastUsedState() {
+      localStorage.setItem(getStorageKey("last-used"), JSON.stringify(getCurrentFormSnapshot()));
+    }
+
+    function restoreLastUsedState() {
+      const stored = localStorage.getItem(getStorageKey("last-used"));
+      if (!stored) {
+        return;
+      }
+
+      try {
+        const snapshot = JSON.parse(stored);
+        if (snapshot && snapshot.mode) {
+          applySnapshot(snapshot, snapshot.mode);
+          showUpdateToast("Restored your last-used values.");
+        }
+      } catch (error) {
+        localStorage.removeItem(getStorageKey("last-used", "shopping"));
+      }
+    }
+
+    function saveDefaults() {
+      localStorage.setItem(getStorageKey("saved-defaults"), JSON.stringify(getCurrentFormSnapshot()));
+      showUpdateToast(`Saved ${currentMode} defaults.`);
+    }
+
+    function loadDefaults(mode = currentMode) {
+      const stored = localStorage.getItem(getStorageKey("saved-defaults", mode));
+      if (!stored) {
+        showUpdateToast(`No saved ${mode} defaults found.`);
+        return;
+      }
+
+      try {
+        const snapshot = JSON.parse(stored);
+        applySnapshot(snapshot, mode);
+        showUpdateToast(`Loaded ${mode} defaults.`);
+      } catch (error) {
+        showUpdateToast("Saved defaults could not be loaded.");
+      }
+    }
+
+    function applyPreset(mode) {
+      const preset = {
+        width: "0",
+        length: "0",
+        extraMeasure: "0",
+        thickness: mode === "shopping" ? "17" : "13",
+        baseQty: "100",
+        blockCharge: "0",
+        printCost: "0",
+        adhesiveCost: "0",
+        profit: "0",
+        handleCost: "2",
+        handleEnabled: false
+      };
+
+      applySnapshot(preset, mode);
+      showUpdateToast(`${mode === "shopping" ? "Shopping" : "Courier"} preset applied.`);
+      saveLastUsedState();
+    }
+
+    async function copyResultSummary() {
+      if (!currentResultText) {
+        showUpdateToast("No result available to copy.");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(currentResultText);
+        showUpdateToast("Result copied to clipboard.");
+      } catch (error) {
+        showUpdateToast("Copy failed. Please try again.");
       }
     }
 
@@ -873,7 +1074,12 @@
       output.innerHTML = `
         <div class="result-badge">Calculation Preview</div>
         <p class="result-empty">Enter the bag details, choose the type, and calculate the final price.</p>
+        <div class="result-actions">
+          <button type="button" class="copy-btn" id="copyResultBtn">Copy Result</button>
+        </div>
       `;
+      currentResultText = "";
+      bindDynamicButtons();
     }
 
     function resetFormValues() {
@@ -896,7 +1102,12 @@
       output.innerHTML = `
         <div class="result-badge">Calculation Preview</div>
         <p class="result-empty">Enter the bag details, choose the type, and calculate the final price.</p>
+        <div class="result-actions">
+          <button type="button" class="copy-btn" id="copyResultBtn">Copy Result</button>
+        </div>
       `;
+      currentResultText = "";
+      bindDynamicButtons();
 
       if (currentMode === "courier") {
         updateAdhesiveFromWidth(true);
@@ -1016,12 +1227,51 @@
         <p class="hint">${currentMode === "shopping"
           ? `Formula used: 75000 / (width + ${extraLabel.toLowerCase()}) / length / thickness`
           : `Formula used: 75000 / width / (length + ${extraLabel.toLowerCase()}) / thickness`}</p>
+        <div class="result-actions">
+          <button type="button" class="copy-btn" id="copyResultBtn">Copy Result</button>
+        </div>
       `;
+
+      currentResultText = [
+        currentMode === "shopping" ? "Shopping Poly Bag" : "Courier Poly Bag",
+        `Pieces Result: ${pieces.toFixed(2)}`,
+        `Base Price (${baseQty} pcs): ${formatMoney(basePrice)}`,
+        `Block Charge: ${formatMoney(blockCharge)}`,
+        `Print Cost: ${formatMoney(printCost)}`,
+        currentMode === "courier" ? `Adhesive Cost: ${formatMoney(adhesiveCost)}` : null,
+        currentMode === "shopping" && handleEnabled ? `Handle Cost: ${formatMoney(handleCost)}` : null,
+        `Profit: ${formatMoney(profit)}`,
+        `Final Price: ${formatMoney(finalPrice)}`
+      ].filter(Boolean).join("\n");
+
+      saveLastUsedState();
+      bindDynamicButtons();
     });
+
+    function bindDynamicButtons() {
+      const copyButton = document.getElementById("copyResultBtn");
+      if (copyButton) {
+        copyButton.onclick = copyResultSummary;
+      }
+    }
+
+    getFieldIds().forEach((fieldId) => {
+      document.getElementById(fieldId).addEventListener("input", () => {
+        saveLastUsedState();
+      });
+    });
+
+    shoppingPresetBtn.addEventListener("click", () => applyPreset("shopping"));
+    courierPresetBtn.addEventListener("click", () => applyPreset("courier"));
+    saveDefaultsBtn.addEventListener("click", saveDefaults);
+    loadDefaultsBtn.addEventListener("click", () => loadDefaults(currentMode));
+    copyResultBtn.addEventListener("click", copyResultSummary);
 
     setMode(currentMode);
     updateConnectionState();
     setSystemSyncStatus("Ready");
+    restoreLastUsedState();
+    bindDynamicButtons();
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
@@ -1066,6 +1316,7 @@
   </script>
 </body>
 </html>
+
 
 
 

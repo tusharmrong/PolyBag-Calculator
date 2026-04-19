@@ -18,6 +18,7 @@
     --panel: rgba(255, 255, 255, 0.94);
     --panel-soft: #f4f0e8;
     --panel-muted: #f8fafc;
+    --panel-strong: #fffaf2;
     --text: #14253d;
     --muted: #68768d;
     --line: #d7dfeb;
@@ -57,21 +58,48 @@
     border-radius: 28px;
     padding: 28px;
     box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .calculator::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(217, 119, 6, 0.14), transparent 70%);
+    pointer-events: none;
   }
 
   h1 {
-    margin: 0 0 8px;
-    font-size: 30px;
+    margin: 0 0 6px;
+    font-size: 32px;
     letter-spacing: -0.03em;
     text-align: center;
   }
 
   .subtitle {
-    margin: 0 0 22px;
+    margin: 0 0 18px;
     text-align: center;
     color: var(--muted);
     font-size: 14px;
     line-height: 1.5;
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(217, 119, 6, 0.12);
+    color: var(--accent-strong);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 
   .hero-strip {
@@ -88,6 +116,10 @@
     font-weight: 700;
   }
 
+  .hero-strip span:last-child {
+    text-align: right;
+  }
+
   .system-strip {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -98,10 +130,11 @@
   .status-chip {
     padding: 10px 12px;
     border-radius: 16px;
-    background: rgba(20, 37, 61, 0.06);
+    background: rgba(255, 255, 255, 0.72);
     border: 1px solid rgba(20, 37, 61, 0.08);
     display: grid;
     gap: 4px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 
   .status-label {
@@ -172,10 +205,11 @@
   }
 
   .panel-block {
-    padding: 16px;
+    padding: 18px;
     border-radius: 20px;
-    background: var(--panel-muted);
+    background: linear-gradient(180deg, var(--panel-muted), #ffffff);
     border: 1px solid #e6ebf3;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 
   .section-title {
@@ -202,6 +236,12 @@
     font-size: 13px;
     color: var(--muted);
     font-weight: 600;
+  }
+
+  .field-note {
+    font-size: 11px;
+    color: #90a0b8;
+    margin-top: -2px;
   }
 
   input[type="number"] {
@@ -293,18 +333,34 @@
 
   .result {
     margin-top: 18px;
-    background: linear-gradient(180deg, #fffdf8, #ffffff);
+    background: linear-gradient(180deg, var(--panel-strong), #ffffff);
     border: 1px solid #eee2d1;
-    border-radius: 22px;
-    padding: 20px;
+    border-radius: 24px;
+    padding: 22px;
     min-height: 120px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    position: relative;
   }
 
   .result p {
     margin: 0 0 10px;
     font-size: 14px;
     color: #334155;
+  }
+
+  .result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(217, 119, 6, 0.1);
+    color: var(--accent-strong);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .result-line {
@@ -335,6 +391,7 @@
     font-size: 28px;
     font-weight: 800;
     letter-spacing: -0.03em;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   }
 
   .hint {
@@ -382,6 +439,11 @@
     text-align: center;
   }
 
+  .result-empty {
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
   .update-toast.visible {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -425,6 +487,7 @@
 </head>
 <body>
   <div class="calculator">
+    <div class="brand-mark">Poly Bag Pricing Suite</div>
     <h1>Poly Bag Calculator</h1>
     <p class="subtitle">Switch between Shopping and Courier bag pricing in one calculator.</p>
     <div class="top-actions">
@@ -462,10 +525,12 @@
           <div class="field">
             <label for="width">Width</label>
             <input type="number" id="width" min="0" step="0.01" value="0" placeholder="none" data-zero-clear="true" required>
+            <span class="field-note">Enter your bag width</span>
           </div>
           <div class="field">
             <label for="length">Length</label>
             <input type="number" id="length" min="0" step="0.01" value="0" placeholder="none" data-zero-clear="true" required>
+            <span class="field-note">Enter your bag length</span>
           </div>
         </div>
 
@@ -473,10 +538,12 @@
           <div class="field">
             <label for="extraMeasure" id="extraMeasureLabel">Folding</label>
             <input type="number" id="extraMeasure" min="0" step="0.01" value="0" placeholder="none" data-zero-clear="true" required>
+            <span class="field-note" id="extraMeasureNote">Extra fold size</span>
           </div>
           <div class="field">
             <label for="thickness">Thickness</label>
             <input type="number" id="thickness" min="0" step="0.01" value="17" required>
+            <span class="field-note">Changeable default thickness</span>
           </div>
         </div>
 
@@ -484,6 +551,7 @@
           <div class="field">
             <label for="baseQty">Base Quantity</label>
             <input type="number" id="baseQty" min="0" step="0.01" value="100" required>
+            <span class="field-note">Used in base price calculation</span>
           </div>
         </div>
       </div>
@@ -531,12 +599,13 @@
     </form>
 
     <div class="result" id="output" aria-live="polite">
-      <p>Enter the bag details, choose the type, and calculate the final price.</p>
+      <div class="result-badge">Calculation Preview</div>
+      <p class="result-empty">Enter the bag details, choose the type, and calculate the final price.</p>
     </div>
 
     <p class="hint">Zero-value fields show as none while typing and return to 0 if left empty.</p>
     <div class="meta-bar">
-      <span id="appVersion">Version 2.0.0</span>
+      <span id="appVersion">Version 2.1.0</span>
       <span id="updateStatus">stable release</span>
     </div>
     <p class="credit-line">Developed by Tushar Mrong</p>
@@ -545,7 +614,7 @@
   <div class="update-toast" id="updateToast" aria-live="polite"></div>
 
   <script>
-    const APP_VERSION = "2.0.0";
+    const APP_VERSION = "2.1.0";
     const config = {
       shopping: {
         title: "Shopping Bag Details",
@@ -567,6 +636,7 @@
     const output = document.getElementById("output");
     const sectionTitle = document.getElementById("sectionTitle");
     const extraMeasureLabel = document.getElementById("extraMeasureLabel");
+    const extraMeasureNote = document.getElementById("extraMeasureNote");
     const thicknessInput = document.getElementById("thickness");
     const adhesiveField = document.getElementById("adhesiveField");
     const adhesiveInput = document.getElementById("adhesiveCost");
@@ -774,6 +844,7 @@
 
       sectionTitle.textContent = modeConfig.title;
       extraMeasureLabel.textContent = modeConfig.extraLabel;
+      extraMeasureNote.textContent = mode === "shopping" ? "Extra fold size" : "Courier flap size";
       thicknessInput.value = modeConfig.thickness;
       adhesiveField.classList.toggle("hidden", !modeConfig.showAdhesive);
       handleToggleWrap.classList.toggle("hidden", !modeConfig.showHandle);
@@ -799,7 +870,10 @@
         button.setAttribute("aria-pressed", String(active));
       });
 
-      output.innerHTML = "<p>Enter the bag details, choose the type, and calculate the final price.</p>";
+      output.innerHTML = `
+        <div class="result-badge">Calculation Preview</div>
+        <p class="result-empty">Enter the bag details, choose the type, and calculate the final price.</p>
+      `;
     }
 
     function resetFormValues() {
@@ -819,7 +893,10 @@
       handleToggle.classList.remove("active");
       handleToggle.textContent = "Add Handle Cost";
       handleRow.classList.add("hidden");
-      output.innerHTML = "<p>Enter the bag details, choose the type, and calculate the final price.</p>";
+      output.innerHTML = `
+        <div class="result-badge">Calculation Preview</div>
+        <p class="result-empty">Enter the bag details, choose the type, and calculate the final price.</p>
+      `;
 
       if (currentMode === "courier") {
         updateAdhesiveFromWidth(true);
@@ -925,6 +1002,7 @@
       const extraLabel = config[currentMode].extraLabel;
 
       output.innerHTML = `
+        <div class="result-badge">${currentMode === "shopping" ? "Shopping Bag Result" : "Courier Bag Result"}</div>
         <p><strong>${currentMode === "shopping" ? "Shopping Poly Bag" : "Courier Poly Bag"}</strong></p>
         <div class="result-line"><span>Pieces Result</span><span>${pieces.toFixed(2)}</span></div>
         <div class="result-line"><span>Base Price (${baseQty} pcs)</span><span>${formatMoney(basePrice)}</span></div>
@@ -988,6 +1066,7 @@
   </script>
 </body>
 </html>
+
 
 
 

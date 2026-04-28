@@ -179,7 +179,7 @@
   .sidebar-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(10, 24, 48, 0.42);
+    background: transparent;
     z-index: 35;
     opacity: 0;
     pointer-events: none;
@@ -779,7 +779,7 @@
 
     <p class="hint">Zero-value fields show as none while typing and return to 0 if left empty.</p>
     <div class="meta-bar">
-      <span id="appVersion">Version 2.4.3</span>
+      <span id="appVersion">Version 2.4.4</span>
       <span id="updateStatus">stable release</span>
     </div>
     <p class="credit-line">Developed by Tushar Mrong</p>
@@ -789,7 +789,7 @@
   <div class="update-toast" id="updateToast" aria-live="polite"></div>
 
   <script>
-    const APP_VERSION = "2.4.3";
+    const APP_VERSION = "2.4.4";
     const config = {
       shopping: {
         title: "Shopping Bag Details",
@@ -1461,6 +1461,7 @@
   </script>
 </body>
 </html>
+
 
 
 
